@@ -4,6 +4,10 @@ public class NoResponseDataException extends Exception {
 
     private long errorCode;
 
+    public NoResponseDataException(String message) {
+        super(message);
+    }
+
     public NoResponseDataException(long errorCode) {
         this.errorCode = errorCode;
     }
