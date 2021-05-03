@@ -35,8 +35,8 @@ public class ServiceCallerImpl implements IServiceCaller {
      * @throws NoResponseDataException
      */
     public List<Event> getEvents(String url, String token) throws NoResponseDataException {
-        logger.trace("Getting all events from {} with token{}:", url, token);
         url = url + Constants.URL_PATH_GET_EVENTS;
+        logger.trace("Getting all events from {} with token{}:", url, token);
         ResponseEntity<ServiceResponse> response = generateResponseEntity(url, token, HttpMethod.GET);
         if (response == null) {
             logger.error("Failure during get all event  url: {}", url);
@@ -53,6 +53,7 @@ public class ServiceCallerImpl implements IServiceCaller {
             return null;
         }
         ObjectMapper mapper = new ObjectMapper();
+        logger.debug("Return list of Event from url: {}", url);
         return mapper.convertValue(response.getBody().getData(), new TypeReference<List<Event>>() {});
 
     }
@@ -67,6 +68,7 @@ public class ServiceCallerImpl implements IServiceCaller {
      */
     public Event getEvent(String url, String token, long eventId) throws NoResponseDataException {
         url = url + Constants.URL_PATH_GET_EVENT_BY_ID + "/" + eventId;
+        logger.trace("Getting all events from {} with token{}:", url, token);
         ResponseEntity<ServiceResponse> response = generateResponseEntity(url, token, HttpMethod.GET);
         if (response == null) {
             logger.error("Failure during get event for event: {} url: {}", eventId, url);
@@ -83,6 +85,7 @@ public class ServiceCallerImpl implements IServiceCaller {
             return null;
         }
         ObjectMapper mapper = new ObjectMapper();
+        logger.debug("return a details of Event from url: {}", url);
         return mapper.convertValue(response.getBody().getData(), new TypeReference<Event>() {});
     }
 
@@ -101,6 +104,7 @@ public class ServiceCallerImpl implements IServiceCaller {
                   + Constants.URL_PATH_POST_RESERVATION_EVENT_ID + "/" + eventId
                   + Constants.URL_PATH_POST_RESERVATION_SEAT_ID + "/" + seatId
                   + Constants.URL_PATH_POST_RESERVATION_CARD_ID + "/" + cardId;
+        logger.trace("Getting all events from {} with token{}:", url, token);
         ResponseEntity<ServiceResponse> response = generateResponseEntity(url, token, HttpMethod.POST);
         if (response == null) {
             logger.error("Failure during reservation for event: {}. seat: {} with card: {} url: {}",eventId, seatId, cardId, url);
@@ -114,6 +118,7 @@ public class ServiceCallerImpl implements IServiceCaller {
             return null;
         }
         if (!isValidResponse) {
+            logger.error("Invalid response from url: {}", url);
             return null;
         }
         ObjectMapper mapper = new ObjectMapper();
@@ -129,12 +134,14 @@ public class ServiceCallerImpl implements IServiceCaller {
      * @return
      */
     private  ResponseEntity<ServiceResponse> generateResponseEntity(String url, String token, HttpMethod httpMethod) {
+        logger.trace("Generate ResponstEntity<> for url: {}", url);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set(Constants.AUTH_HEADER, token);
         HttpEntity<ServiceResponse> entity = new HttpEntity<>(headers);
         try {
+            logger.debug("Call url: {}", url);
             ResponseEntity<ServiceResponse> response = restTemplate.exchange(url, httpMethod, entity, ServiceResponse.class);
             if (response.getStatusCode() == HttpStatus.OK) {
                 return response;
@@ -160,15 +167,17 @@ public class ServiceCallerImpl implements IServiceCaller {
      * @throws NoSuchAlgorithmException
      */
     private boolean validateResponse(ResponseEntity<ServiceResponse> response) throws IllegalResponsePath, NoResponseDataException, NoSuchAlgorithmException {
+        logger.trace("Validate response: {}", response);
         String key = Objects.requireNonNull(response.getHeaders().get(Constants.API_KEY_HEADER_PARAMETER)).get(0);
         if (key == null || key.length() == 0 || !Constants.AUTHENTICATION_HASH.equals(getStringFromSHA256(key))) {
-            logger.error("INVALID RESPONSE");
+            logger.error("Invalid response: {}", response);
             throw new IllegalResponsePath("The response is not from Ticket API");
         }
         if (response.getBody().getData() == null && response.getBody().getErrorMessage() == null) {
-            logger.error("Empty response data");
+            logger.error("Empty response data from url: {}", response);
             throw new NoResponseDataException(response.getBody().getErrorMessage(), response.getBody().getErrorCode());
         }
+        logger.debug("Successfully response validation fro response: {}", response);
         return true;
     }
 
