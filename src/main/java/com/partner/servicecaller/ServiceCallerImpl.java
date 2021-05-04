@@ -34,10 +34,10 @@ public class ServiceCallerImpl implements IServiceCaller {
      * @return List<Event>
      * @throws NoResponseDataException
      */
-    public List<Event> getEvents(String url, String token) throws NoResponseDataException {
+    public List<Event> getEvents(String url, String token, String user, String pwd) throws NoResponseDataException {
         url = url + Constants.URL_PATH_GET_EVENTS;
         logger.trace("Getting all events from {} with token{}:", url, token);
-        ResponseEntity<ServiceResponse> response = generateResponseEntity(url, token, HttpMethod.GET);
+        ResponseEntity<ServiceResponse> response = generateResponseEntity(url, token, HttpMethod.GET, user, pwd);
         if (response == null) {
             logger.error("Failure during get all event  url: {}", url);
             throw new NoResponseDataException("Empty response");
@@ -47,13 +47,17 @@ public class ServiceCallerImpl implements IServiceCaller {
             isValidResponse = validateResponse(response);
         } catch (IllegalResponsePath | NoResponseDataException | NoSuchAlgorithmException illegalResponsePath) {
             logger.error("failure during response validation: {}",  illegalResponsePath.getMessage());
-            return null;
+            throw new NoResponseDataException("Invalid response from: "+ url);
         }
         if (!isValidResponse) {
-            return null;
+            throw new NoResponseDataException("Invalid response from: "+ url);
         }
         ObjectMapper mapper = new ObjectMapper();
         logger.debug("Return list of Event from url: {}", url);
+        if (response.getBody().getData() ==  null) {
+            logger.error("Failure during get all event, Empty data  url: {}", url);
+            throw new NoResponseDataException( response.getBody().getErrorMessage(), response.getBody().getErrorCode());
+        }
         return mapper.convertValue(response.getBody().getData(), new TypeReference<List<Event>>() {});
 
     }
@@ -66,10 +70,10 @@ public class ServiceCallerImpl implements IServiceCaller {
      * @return Event
      * @throws NoResponseDataException
      */
-    public Event getEvent(String url, String token, long eventId) throws NoResponseDataException {
+    public Event getEvent(String url, String token, long eventId, String user, String pwd) throws NoResponseDataException {
         url = url + Constants.URL_PATH_GET_EVENT_BY_ID + "/" + eventId;
         logger.trace("Getting all events from {} with token{}:", url, token);
-        ResponseEntity<ServiceResponse> response = generateResponseEntity(url, token, HttpMethod.GET);
+        ResponseEntity<ServiceResponse> response = generateResponseEntity(url, token, HttpMethod.GET, user, pwd);
         if (response == null) {
             logger.error("Failure during get event for event: {} url: {}", eventId, url);
             throw new NoResponseDataException("Empty response");
@@ -79,12 +83,17 @@ public class ServiceCallerImpl implements IServiceCaller {
             isValidResponse = validateResponse(response);
         } catch (IllegalResponsePath | NoResponseDataException | NoSuchAlgorithmException illegalResponsePath) {
             logger.error("failure during response validation: {}",  illegalResponsePath.getMessage());
-            return null;
+           throw new NoResponseDataException("Invalid response from: "+ url);
         }
         if (!isValidResponse) {
-            return null;
+            logger.error("Invalid response from url: {}", url);
+            throw new NoResponseDataException("Invalid response from: "+ url);
         }
         ObjectMapper mapper = new ObjectMapper();
+        if (response.getBody().getData() ==  null) {
+            logger.error("Failure during get all event, Empty data  url: {}", url);
+            throw new NoResponseDataException( response.getBody().getErrorMessage(), response.getBody().getErrorCode());
+        }
         logger.debug("return a details of Event from url: {}", url);
         return mapper.convertValue(response.getBody().getData(), new TypeReference<Event>() {});
     }
@@ -99,13 +108,13 @@ public class ServiceCallerImpl implements IServiceCaller {
      * @return
      * @throws NoResponseDataException
      */
-    public ServiceResponse<Reservation> reserve(String url, String token,long eventId, String seatId, String cardId) throws NoResponseDataException {
+    public ServiceResponse<Reservation> reserve(String url, String token,long eventId, String seatId, String cardId, String user, String pwd) throws NoResponseDataException {
         url = url + Constants.URL_PATH_POST_RESERVATION_BASE
                   + Constants.URL_PATH_POST_RESERVATION_EVENT_ID + "/" + eventId
                   + Constants.URL_PATH_POST_RESERVATION_SEAT_ID + "/" + seatId
                   + Constants.URL_PATH_POST_RESERVATION_CARD_ID + "/" + cardId;
         logger.trace("Getting all events from {} with token{}:", url, token);
-        ResponseEntity<ServiceResponse> response = generateResponseEntity(url, token, HttpMethod.POST);
+        ResponseEntity<ServiceResponse> response = generateResponseEntity(url, token, HttpMethod.POST, user, pwd);
         if (response == null) {
             logger.error("Failure during reservation for event: {}. seat: {} with card: {} url: {}",eventId, seatId, cardId, url);
             throw new NoResponseDataException("Empty response");
@@ -115,13 +124,17 @@ public class ServiceCallerImpl implements IServiceCaller {
             isValidResponse = validateResponse(response);
         } catch (IllegalResponsePath | NoResponseDataException | NoSuchAlgorithmException illegalResponsePath ) {
             logger.error("failure during response validation: {}",  illegalResponsePath.getMessage());
-            return null;
+            throw new NoResponseDataException("Invalid response from: "+ url);
         }
         if (!isValidResponse) {
             logger.error("Invalid response from url: {}", url);
-            return null;
+            throw new NoResponseDataException("Invalid response from: "+ url);
         }
         ObjectMapper mapper = new ObjectMapper();
+        if (response.getBody().getData() ==  null) {
+            logger.error("Failure during get all event, Empty data  url: {}", url);
+            throw new NoResponseDataException( response.getBody().getErrorMessage(), response.getBody().getErrorCode());
+        }
         return mapper.convertValue(response.getBody(), new TypeReference<ServiceResponse<Reservation>>() {});
 
     }
@@ -133,12 +146,13 @@ public class ServiceCallerImpl implements IServiceCaller {
      * @param httpMethod
      * @return
      */
-    private  ResponseEntity<ServiceResponse> generateResponseEntity(String url, String token, HttpMethod httpMethod) {
+    private  ResponseEntity<ServiceResponse> generateResponseEntity(String url, String token, HttpMethod httpMethod, String user, String pwd) {
         logger.trace("Generate ResponstEntity<> for url: {}", url);
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth(user, pwd);
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(Constants.AUTH_HEADER, token);
+        headers.set(Constants.TOKEN_HEADER, token);
         HttpEntity<ServiceResponse> entity = new HttpEntity<>(headers);
         try {
             logger.debug("Call url: {}", url);
@@ -173,9 +187,9 @@ public class ServiceCallerImpl implements IServiceCaller {
             logger.error("Invalid response: {}", response);
             throw new IllegalResponsePath("The response is not from Ticket API");
         }
-        if (response.getBody().getData() == null && response.getBody().getErrorMessage() == null) {
+        if (response.getBody() == null ) {
             logger.error("Empty response data from url: {}", response);
-            throw new NoResponseDataException(response.getBody().getErrorMessage(), response.getBody().getErrorCode());
+            throw new NoResponseDataException("Empty response body");
         }
         logger.debug("Successfully response validation fro response: {}", response);
         return true;

@@ -11,15 +11,27 @@
     <groupId>com.partner</groupId>
     <artifactId>partner_module</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>demo</name>
-    <description>Demo project for Spring Boot</description>
+    <name>partner</name>
+    <description>call ticket system management</description>
+    <developers>
+        <developer>
+            <name>Tamás Gyenese</name>
+            <email>gyenesetomi@gmail.com</email>
+            <timezone>+2</timezone>
+        </developer>
+    </developers>
+
     <properties>
         <java.version>11</java.version>
+        <springframework.boot.version>2.4.5</springframework.boot.version>
+        <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
+        <maven.javadoc.skip>false</maven.javadoc.skip>
     </properties>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <version>${springframework.boot.version}</version>
         </dependency>
 
         <dependency>
@@ -34,6 +46,19 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven-javadoc-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
