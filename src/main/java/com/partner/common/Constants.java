@@ -3,7 +3,7 @@ package com.partner.common;
 public final class Constants {
 
 
-    public static final String AUTH_HEADER = "authorization";
+    public static final String TOKEN_HEADER = "token";
     public static final String API_KEY_HEADER_PARAMETER = "API_KEY";
 
     public static final String URL_PATH_GET_EVENTS = "/ticket/getEvents";
