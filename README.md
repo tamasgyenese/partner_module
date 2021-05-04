@@ -10,6 +10,9 @@
  <br>
  The Ticket module sends back a response with an API-KEY and the hash code of this value and the hashing logic are stored in
  Partner module. To compare these values we can restrict the communication, because we would like to get response only from Ticket module.
+ <br>
+ 
+
 ## Built With
 * [Spring Boot 2](https://spring.io/projects/spring-boot)
 
